@@ -29,8 +29,19 @@ export class ServerlessApiCdkStack extends cdk.Stack {
         TABLE_NAME: table.tableName,
       },
     });
+
+    const postProduct = new lambda.Function(this, "postProduct", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: "postProduct.handler",
+      code: lambda.Code.fromAsset("lambda"),
+      environment: {
+        TABLE_NAME: table.tableName,
+      },
+    });
+
     // DynamoDBテーブルへのアクセスポリシーをLambda関数に追加
     table.grantReadData(getProduct);
+    table.grantWriteData(postProduct);
 
     // // API Gatewayの作成
     const api = new apigateway.RestApi(this, "serverlessApi", {
@@ -38,8 +49,11 @@ export class ServerlessApiCdkStack extends cdk.Stack {
     });
 
     // // API Gatewayのリソースと統合を作成
-    const integration = new apigateway.LambdaIntegration(getProduct);
-    api.root.addMethod("GET", integration);
+    const getProductIntegration = new apigateway.LambdaIntegration(getProduct);
+    api.root.addMethod("GET", getProductIntegration);
+    const postProductIntegration = new apigateway.LambdaIntegration(postProduct);
+    api.root.addMethod("POST", postProductIntegration);
+
     api.root.addCorsPreflight({
       allowOrigins: apigateway.Cors.ALL_ORIGINS,
       allowMethods: apigateway.Cors.ALL_METHODS,
