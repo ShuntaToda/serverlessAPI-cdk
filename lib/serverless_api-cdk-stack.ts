@@ -1,16 +1,48 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import path = require("path");
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class ServerlessApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    // DynamoDBテーブルの作成
+    const table = new dynamodb.Table(this, "Products", {
+      tableName: "Products",
+      partitionKey: {
+        name: "product_id",
+        type: dynamodb.AttributeType.NUMBER,
+      },
+    });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'ServerlessApiCdkQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    // Lambda関数の作成
+
+    const getProduct = new lambda.Function(this, "getProduct", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: "getProduct.handler",
+      code: lambda.Code.fromAsset("lambda"),
+      environment: {
+        TABLE_NAME: table.tableName,
+      },
+    });
+    // DynamoDBテーブルへのアクセスポリシーをLambda関数に追加
+    table.grantReadData(getProduct);
+
+    // // API Gatewayの作成
+    const api = new apigateway.RestApi(this, "serverlessApi", {
+      restApiName: "serverless API",
+    });
+
+    // // API Gatewayのリソースと統合を作成
+    const integration = new apigateway.LambdaIntegration(getProduct);
+    api.root.addMethod("GET", integration);
+    api.root.addCorsPreflight({
+      allowOrigins: apigateway.Cors.ALL_ORIGINS,
+      allowMethods: apigateway.Cors.ALL_METHODS,
+    });
   }
 }
