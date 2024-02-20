@@ -15,7 +15,7 @@ export class ServerlessApiCdkStack extends cdk.Stack {
       tableName: "Products",
       partitionKey: {
         name: "product_id",
-        type: dynamodb.AttributeType.NUMBER,
+        type: dynamodb.AttributeType.STRING,
       },
     });
 

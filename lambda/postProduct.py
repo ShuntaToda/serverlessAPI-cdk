@@ -30,7 +30,5 @@ def handler(event, context):
         }
         return response_data
 
-    # テーブルから指定されたidのデータを取得
-    # return queryStringParameters
     response_data = table.put_item(Item=queryStringParameters)
     return response_data
