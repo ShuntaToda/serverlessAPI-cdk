@@ -34,4 +34,4 @@ def handler(event, context):
         'body': f'{items}'
     }
     
-    return response_data
+    return {'statusCode': 200,'body': f'{response_data}'}
